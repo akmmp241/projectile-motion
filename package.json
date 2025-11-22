@@ -1,0 +1,16 @@
+{
+  "name": "parabolic",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "scripts": {
+    "dev": "bun build ./src/app.ts --outdir ./public --watch",
+    "build": "bun build ./src/app.ts --outdir ./public"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}

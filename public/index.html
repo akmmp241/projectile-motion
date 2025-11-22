@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Parabola - Fisika</title>
+  <style>
+    body { margin: 0; overflow: hidden; background: #f5f5f5; }
+    canvas { display: block; padding: 60px; background: #f5f5f5; }
+    .controls {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 15px;
+      border-radius: 8px;
+      color: white;
+      z-index: 10;
+    }
+
+    input[type=range] {
+      width: 300px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<div class="controls" id="header">
+  <h1>test</h1>
+  <label for="gravity">Gravitasi: <span></span></label><br>
+  <input type="number" name="gravity" id="gravity" value="9.8" step="0.1">
+  <br>
+  <label>Theta: <span></span></label><br>
+  <input type="number" id="theta" value="30" max="90">
+  <br>
+  <label>Kecepatan awal: <span></span></label><br>
+  <input type="number" id="v-x-awal" value="10" max="100" step="1">
+  <br>
+  <label>Percepatan: <span></span></label><br>
+  <input type="number" id="a" value="0" max="60" step="1">
+  <br>
+  <label>Timeline: <span id="timeDisplay">0.0s</span></label><br>
+  <input type="range" id="times" name="volume" min="0" max="100" value="0" step="1">
+  <button id="start">start</button>
+</div>
+
+<canvas id="canvas"></canvas>
+<script src="./app.js"></script>
+</body>
+</html>
