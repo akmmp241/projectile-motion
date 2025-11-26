@@ -31,7 +31,6 @@ const generatePath = (startX: number, startY: number, duration: number, g: numbe
   const vx = v * Math.cos(theta * (Math.PI / 180)) // m/s
   const vy = v * Math.sin(theta * (Math.PI / 180)) * -1// m/s
 
-
   const timeStep = 0.1
   for (let t = 0; t <= duration; t += timeStep) {
 
@@ -79,8 +78,68 @@ const getPositionAtTime = (path: CheckPoint[], currentTime: number): Vector2 => 
   // return createVector(currentX, currentY);
 };
 
+const drawCourt = (ctx: CanvasRenderingContext2D) => {
+  ctx.fillStyle = '#75bf1e';
+  const height = 75 * PIXELS_PER_METER;
+  const length = 100 * PIXELS_PER_METER;
+
+  ctx.fillRect(ORIGIN.x, ORIGIN.y - (height / 2), length, height)
+
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = '#ffffff';
+  ctx.fillStyle = '#000';
+  ctx.beginPath()
+
+  // center circle
+  ctx.arc(ORIGIN.x + (length / 2), ORIGIN.y, 9.15 * PIXELS_PER_METER, 0, 2 * Math.PI)
+
+  // center line
+  ctx.moveTo(ORIGIN.x + (length / 2), ORIGIN.y);
+  ctx.lineTo(ORIGIN.x + (length / 2), ORIGIN.y + height/2);
+  ctx.lineTo(ORIGIN.x + (length / 2), ORIGIN.y - height/2);
+
+  // left penalty zone
+  const penaltyHeight = 16.5 * PIXELS_PER_METER;
+  const penaltyLength = 40.3 * PIXELS_PER_METER;
+
+  ctx.moveTo(ORIGIN.x, ORIGIN.y - (penaltyLength / 2));
+  ctx.lineTo(ORIGIN.x + penaltyHeight, ORIGIN.y - (penaltyLength / 2));
+  ctx.lineTo(ORIGIN.x + penaltyHeight, ORIGIN.y + (penaltyLength / 2) );
+  ctx.lineTo(ORIGIN.x, ORIGIN.y + (penaltyLength / 2));
+
+  ctx.moveTo(ORIGIN.x, ORIGIN.y + (7.32 * PIXELS_PER_METER  / 2) + (5.5 * PIXELS_PER_METER));
+  ctx.lineTo(ORIGIN.x + (5.5 * PIXELS_PER_METER), ORIGIN.y + (7.32 * PIXELS_PER_METER / 2) + (5.5 * PIXELS_PER_METER))
+  ctx.lineTo(ORIGIN.x + (5.5 * PIXELS_PER_METER), ORIGIN.y - (7.32 * PIXELS_PER_METER / 2) - (5.5 * PIXELS_PER_METER));
+  ctx.lineTo(ORIGIN.x, ORIGIN.y - (7.32 * PIXELS_PER_METER / 2) - (5.5 * PIXELS_PER_METER))
+
+  // right penalty zone
+  ctx.moveTo(ORIGIN.x + length, ORIGIN.y - (penaltyLength / 2));
+  ctx.lineTo(ORIGIN.x + length - penaltyHeight, ORIGIN.y - (penaltyLength / 2));
+  ctx.lineTo(ORIGIN.x + length - penaltyHeight, ORIGIN.y + (penaltyLength / 2) );
+  ctx.lineTo(ORIGIN.x + length, ORIGIN.y + (penaltyLength / 2));
+
+  ctx.moveTo(ORIGIN.x + length, ORIGIN.y + (7.32 * PIXELS_PER_METER  / 2) + (5.5 * PIXELS_PER_METER));
+  ctx.lineTo(ORIGIN.x + length - (5.5 * PIXELS_PER_METER), ORIGIN.y + (7.32 * PIXELS_PER_METER / 2) + (5.5 * PIXELS_PER_METER))
+  ctx.lineTo(ORIGIN.x + length - (5.5 * PIXELS_PER_METER), ORIGIN.y - (7.32 * PIXELS_PER_METER / 2) - (5.5 * PIXELS_PER_METER));
+  ctx.lineTo(ORIGIN.x + length, ORIGIN.y - (7.32 * PIXELS_PER_METER / 2) - (5.5 * PIXELS_PER_METER))
+
+  ctx.stroke()
+
+  const penaltyZone = 11 * PIXELS_PER_METER;
+
+  ctx.beginPath();
+  ctx.arc(ORIGIN.x + penaltyZone, ORIGIN.y, 9.15 * PIXELS_PER_METER, 306 * (Math.PI / 180), 54 * (Math.PI / 180));
+  ctx.stroke()
+
+  ctx.beginPath()
+  ctx.arc(ORIGIN.x + length - penaltyZone, ORIGIN.y, 9.15 * PIXELS_PER_METER, (306 - 180) * (Math.PI / 180), (54 + 180) * (Math.PI / 180))
+  ctx.stroke()
+}
+
 const draw = (ctx: CanvasRenderingContext2D, img: HTMLImageElement, relativePos: Vector2, path: CheckPoint[], width: number, height: number) => {
   ctx.clearRect(0, 0, width, height);
+
+  drawCourt(ctx)
 
   drawCartesianAxes(ctx, width, height);
 
