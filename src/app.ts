@@ -1,7 +1,7 @@
 const PIXELS_PER_METER = 10; // 1 Meter = 10 Pixel
 
 // posisi (0, 0) pada layar
-const ORIGIN = { x: 100, y: 550 };
+const ORIGIN = {x: 100, y: 550};
 
 type Vector2 = {
   x: number
@@ -13,6 +13,14 @@ type CheckPoint = {
   pos: Vector2
 }
 
+type Config = {
+  isControl1: boolean
+}
+
+let Config: Config = {
+  isControl1: true,
+}
+
 const createVector = (x: number, y: number): Vector2 => ({x, y})
 
 // gapake lerp dulu karna too much complexity
@@ -21,17 +29,24 @@ const createVector = (x: number, y: number): Vector2 => ({x, y})
 //   return start + (end - start) * t;
 // };
 
-const generatePath = (startX: number, startY: number, duration: number, g: number, theta: number, v0: number, a: number): CheckPoint[] => {
+const generatePath = (startX: number, startY: number, duration: number, g: number, theta: number, v0: number, a: number, m: number, dragCoeff: number, initVX: number, initVY: number): CheckPoint[] => {
   const path: CheckPoint[] = [];
 
   const v = v0 // m/s
   const gravity = g // m/s
   const acceleration = a // m/s
+  const mass = m // gram
+  const dragCoefficient = dragCoeff
 
-  const vx = v * Math.cos(theta * (Math.PI / 180)) // m/s
-  const vy = v * Math.sin(theta * (Math.PI / 180)) * -1// m/s
+  let vx = initVX
+  let vy = initVY * -1
+  if (Config.isControl1) {
+    vx = v * Math.cos(theta * (Math.PI / 180)) // m/s
+    vy = v * Math.sin(theta * (Math.PI / 180)) * -1// m/s
+  }
+  const magnitude = Math.sqrt(vx * vx * vx + vy * vy);
 
-  const timeStep = 0.1
+  const timeStep = 0.01
   for (let t = 0; t <= duration; t += timeStep) {
 
     // X = X0 + Vx * t + 0.5 + a + t^2
@@ -39,6 +54,8 @@ const generatePath = (startX: number, startY: number, duration: number, g: numbe
 
     // Y = Y0 + Vy * t + 0.5 * g * t^2
     const y = startY + (vy * t) + (0.5 * gravity * (t * t));
+
+    if (y > 10) break
 
     path.push({
       time: t,
@@ -54,7 +71,7 @@ const getPositionAtTime = (path: CheckPoint[], currentTime: number): Vector2 => 
   if (currentTime >= lastPoint.time) return lastPoint.pos;
   if (currentTime <= 0) return path[0]?.pos as Vector2;
 
-  const timeStep = 0.1
+  const timeStep = 0.01
   const rawIndex = currentTime / timeStep
 
   let indexA = Math.floor(rawIndex);
@@ -64,7 +81,7 @@ const getPositionAtTime = (path: CheckPoint[], currentTime: number): Vector2 => 
 
   return path[indexA]?.pos as Vector2
 
-  // KOMPONEN LERP
+  // KOMPONEN LERP which is gadipake dulu
   // const indexB = indexA + 1;
 
   // const pointA = path[indexA] as CheckPoint;
@@ -80,8 +97,8 @@ const getPositionAtTime = (path: CheckPoint[], currentTime: number): Vector2 => 
 
 const drawCourt = (ctx: CanvasRenderingContext2D) => {
   ctx.fillStyle = '#75bf1e';
-  const height = 75 * PIXELS_PER_METER;
-  const length = 100 * PIXELS_PER_METER;
+  const height = 68 * PIXELS_PER_METER;
+  const length = 104 * PIXELS_PER_METER;
 
   ctx.fillRect(ORIGIN.x, ORIGIN.y - (height / 2), length, height)
 
@@ -95,8 +112,8 @@ const drawCourt = (ctx: CanvasRenderingContext2D) => {
 
   // center line
   ctx.moveTo(ORIGIN.x + (length / 2), ORIGIN.y);
-  ctx.lineTo(ORIGIN.x + (length / 2), ORIGIN.y + height/2);
-  ctx.lineTo(ORIGIN.x + (length / 2), ORIGIN.y - height/2);
+  ctx.lineTo(ORIGIN.x + (length / 2), ORIGIN.y + height / 2);
+  ctx.lineTo(ORIGIN.x + (length / 2), ORIGIN.y - height / 2);
 
   // left penalty zone
   const penaltyHeight = 16.5 * PIXELS_PER_METER;
@@ -104,10 +121,10 @@ const drawCourt = (ctx: CanvasRenderingContext2D) => {
 
   ctx.moveTo(ORIGIN.x, ORIGIN.y - (penaltyLength / 2));
   ctx.lineTo(ORIGIN.x + penaltyHeight, ORIGIN.y - (penaltyLength / 2));
-  ctx.lineTo(ORIGIN.x + penaltyHeight, ORIGIN.y + (penaltyLength / 2) );
+  ctx.lineTo(ORIGIN.x + penaltyHeight, ORIGIN.y + (penaltyLength / 2));
   ctx.lineTo(ORIGIN.x, ORIGIN.y + (penaltyLength / 2));
 
-  ctx.moveTo(ORIGIN.x, ORIGIN.y + (7.32 * PIXELS_PER_METER  / 2) + (5.5 * PIXELS_PER_METER));
+  ctx.moveTo(ORIGIN.x, ORIGIN.y + (7.32 * PIXELS_PER_METER / 2) + (5.5 * PIXELS_PER_METER));
   ctx.lineTo(ORIGIN.x + (5.5 * PIXELS_PER_METER), ORIGIN.y + (7.32 * PIXELS_PER_METER / 2) + (5.5 * PIXELS_PER_METER))
   ctx.lineTo(ORIGIN.x + (5.5 * PIXELS_PER_METER), ORIGIN.y - (7.32 * PIXELS_PER_METER / 2) - (5.5 * PIXELS_PER_METER));
   ctx.lineTo(ORIGIN.x, ORIGIN.y - (7.32 * PIXELS_PER_METER / 2) - (5.5 * PIXELS_PER_METER))
@@ -115,10 +132,10 @@ const drawCourt = (ctx: CanvasRenderingContext2D) => {
   // right penalty zone
   ctx.moveTo(ORIGIN.x + length, ORIGIN.y - (penaltyLength / 2));
   ctx.lineTo(ORIGIN.x + length - penaltyHeight, ORIGIN.y - (penaltyLength / 2));
-  ctx.lineTo(ORIGIN.x + length - penaltyHeight, ORIGIN.y + (penaltyLength / 2) );
+  ctx.lineTo(ORIGIN.x + length - penaltyHeight, ORIGIN.y + (penaltyLength / 2));
   ctx.lineTo(ORIGIN.x + length, ORIGIN.y + (penaltyLength / 2));
 
-  ctx.moveTo(ORIGIN.x + length, ORIGIN.y + (7.32 * PIXELS_PER_METER  / 2) + (5.5 * PIXELS_PER_METER));
+  ctx.moveTo(ORIGIN.x + length, ORIGIN.y + (7.32 * PIXELS_PER_METER / 2) + (5.5 * PIXELS_PER_METER));
   ctx.lineTo(ORIGIN.x + length - (5.5 * PIXELS_PER_METER), ORIGIN.y + (7.32 * PIXELS_PER_METER / 2) + (5.5 * PIXELS_PER_METER))
   ctx.lineTo(ORIGIN.x + length - (5.5 * PIXELS_PER_METER), ORIGIN.y - (7.32 * PIXELS_PER_METER / 2) - (5.5 * PIXELS_PER_METER));
   ctx.lineTo(ORIGIN.x + length, ORIGIN.y - (7.32 * PIXELS_PER_METER / 2) - (5.5 * PIXELS_PER_METER))
@@ -136,47 +153,80 @@ const drawCourt = (ctx: CanvasRenderingContext2D) => {
   ctx.stroke()
 }
 
-const draw = (ctx: CanvasRenderingContext2D, img: HTMLImageElement, relativePos: Vector2, path: CheckPoint[], width: number, height: number) => {
+const draw = (ctx: CanvasRenderingContext2D, img: HTMLImageElement, relativePos: Vector2, path: CheckPoint[], width: number, height: number, axes: boolean,  angle: number, x: number, y: number) => {
   ctx.clearRect(0, 0, width, height);
 
   drawCourt(ctx)
 
-  drawCartesianAxes(ctx, width, height);
+  ctx.save()
+
+  ctx.translate(ORIGIN.x + (x * PIXELS_PER_METER), ORIGIN.y + (y * PIXELS_PER_METER))
+  ctx.fillRect(0,0, 4, 4)
+
+  ctx.rotate(angle * Math.PI / 180);
+
+
+  if (axes) drawCartesianAxes(ctx, width, height);
 
   ctx.fillStyle = 'rgba(255, 50, 50, 0.5)';
-  path.forEach(p => {
-    const screenX = ORIGIN.x + (p.pos.x * PIXELS_PER_METER);
-    const screenY = ORIGIN.y + (p.pos.y * PIXELS_PER_METER);
+  const step = 10
+  for (let i = 0; i < path.length; i += step) {
+    const p = path[i] as CheckPoint;
+    const screenX = p.pos.x * PIXELS_PER_METER;
+    const screenY = p.pos.y * PIXELS_PER_METER;
 
     ctx.fillRect(screenX - 2, screenY - 2, 8, 8);
-  });
+  }
 
-  const screenX = ORIGIN.x + relativePos.x * PIXELS_PER_METER;
-  const screenY = ORIGIN.y + relativePos.y * PIXELS_PER_METER;
+  const screenX = relativePos.x * PIXELS_PER_METER;
+  const screenY = relativePos.y * PIXELS_PER_METER;
 
   const size = 30;
-  ctx.drawImage(img, screenX - (size/2), screenY - (size/2), size, size);
+  ctx.drawImage(img, screenX - (size / 2), screenY - (size / 2), size, size);
 
   const meterX = (relativePos.x).toFixed(2);
-  const meterY = ((relativePos.y)).toFixed(2); // Y positif ke bawah (Canvas standard)
+  const meterY = (-(relativePos.y)).toFixed(2); // Y positif ke bawah (Canvas standard)
 
-  ctx.fillStyle = "#231111";
+  ctx.fillStyle = "#050000";
   ctx.textAlign = "left";
   ctx.fillText(`x: ${meterX}m`, screenX + 20, screenY);
   ctx.fillText(`y: ${meterY}m`, screenX + 20, screenY + 15);
+
+  ctx.restore()
 };
 
 const main = () => {
   const canvas = document.getElementById('canvas') as HTMLCanvasElement;
   const ctx = canvas?.getContext('2d');
+  const controls = document.querySelectorAll(`input[name="control-type"]`) as NodeListOf<HTMLInputElement>;
+  const control1 = document.getElementById('controls-1') as HTMLDivElement;
+  const control2 = document.getElementById('controls-2') as HTMLDivElement;
   const times = document.getElementById('times') as HTMLInputElement;
-  const label = document.getElementById('timeDisplay') as HTMLInputElement;
+  const timeDisplay = document.getElementById('timeDisplay') as HTMLInputElement;
   const gravity = document.getElementById('gravity') as HTMLInputElement;
   const theta = document.getElementById('theta') as HTMLInputElement;
+  const thetaDisplay = document.getElementById('thetaDisplay') as HTMLInputElement;
   const initialVel = document.getElementById('v-x-awal') as HTMLInputElement;
+  const initVX = document.getElementById('v-x') as HTMLInputElement;
+  const initVY = document.getElementById('v-y') as HTMLInputElement;
   const acceleration = document.getElementById('a') as HTMLInputElement;
+  const axes = document.getElementById('axes') as HTMLInputElement;
+  const angle = document.getElementById('angle') as HTMLInputElement;
+  const x = document.getElementById('x') as HTMLInputElement;
+  const y = document.getElementById('y') as HTMLInputElement;
 
   if (!canvas || !ctx || !times || !gravity || !theta || !initialVel || !acceleration) return;
+
+  const updateControl = (state: boolean) => {
+    if (state) {
+      control1.style.display = 'block';
+      control2.style.display = 'none';
+      return
+    }
+
+    control2.style.display = 'block';
+    control1.style.display = 'none';
+  }
 
   // - 120 karena dikurangi sama padding
   canvas.width = window.innerWidth - 120;
@@ -193,31 +243,63 @@ const main = () => {
       const t = parseFloat(theta.value) || 30.0
       const v0 = parseFloat(initialVel.value) || 15.0
       const a = parseFloat(acceleration.value)
+      const vx = parseInt(initVX.value)
+      const vy = parseInt(initVY.value)
 
-      currentPath = generatePath(0, 0, 100, g, t, v0, a);
+      currentPath = generatePath(0, 0, 1000, g, t, v0, a, 14, 0.67, vx, vy);
 
       renderFrame()
     }
 
     const renderFrame = () => {
       const val = parseFloat(times.value)
+      const timeInSeconds = val / 100;
 
-      const timeInSeconds = val / 10;
+      const isUseAxes = axes.checked
 
-      label.innerText = timeInSeconds.toFixed(1) + "s";
+      const thetaInDeg = parseInt(theta.value)
+
+      const angleInDeg = parseInt(angle.value)
+
+      const posX = parseInt(x.value)
+      const posY = parseInt(y.value)
+
+      timeDisplay.innerText = timeInSeconds.toFixed(2) + "s";
+      thetaDisplay.innerText = thetaInDeg + "°";
 
       const currentPos = getPositionAtTime(currentPath, timeInSeconds);
 
-      draw(ctx, img, currentPos, currentPath, canvas.width, canvas.height);
+      draw(ctx, img, currentPos, currentPath, canvas.width, canvas.height, isUseAxes, angleInDeg, posX, posY);
     };
 
     renderWithNewPath()
     times.addEventListener('input', renderFrame);
 
-    gravity.addEventListener('change', renderWithNewPath);
-    theta.addEventListener('change', renderWithNewPath);
-    initialVel.addEventListener('change', renderWithNewPath);
-    acceleration.addEventListener('change', renderWithNewPath);
+    gravity.addEventListener('input', renderWithNewPath);
+    theta.addEventListener('input', renderWithNewPath);
+    initialVel.addEventListener('input', renderWithNewPath);
+    acceleration.addEventListener('input', renderWithNewPath);
+    axes.addEventListener('input', renderWithNewPath);
+    initVX.addEventListener('input', renderWithNewPath);
+    initVY.addEventListener('input', renderWithNewPath);
+    angle.addEventListener('input', renderFrame);
+    x.addEventListener('input', renderFrame);
+    y.addEventListener('input', renderFrame);
+
+    const updateControlAndRender = (state: boolean) => {
+      Config.isControl1 = state
+      updateControl(state)
+      renderWithNewPath()
+    }
+
+    controls.forEach(input => {
+      input.addEventListener('change', () => {
+        if (input.checked) {
+          if (input.value == "controls-1") updateControlAndRender(true)
+          else updateControlAndRender(false)
+        }
+      })
+    })
 
     renderFrame();
   };
@@ -226,12 +308,7 @@ const main = () => {
 document.addEventListener('DOMContentLoaded', main);
 
 
-
-
-
 // code below ofc made by ai
-
-
 
 
 // --- 3. VISUAL GRID SYSTEM (PENGGARIS) ---
@@ -247,12 +324,15 @@ const drawCartesianAxes = (ctx: CanvasRenderingContext2D, width: number, height:
   ctx.beginPath();
 
   // Garis Horizontal (Sumbu X) - Sepanjang layar melewati ORIGIN.y
-  ctx.moveTo(0, ORIGIN.y);
-  ctx.lineTo(width, ORIGIN.y);
+  ctx.moveTo(0 - ORIGIN.x, 0);
+  ctx.lineTo(width, 0);
 
-  // Garis Vertikal (Sumbu Y) - Sepanjang layar melewati ORIGIN.x
-  ctx.moveTo(ORIGIN.x, 0);
-  ctx.lineTo(ORIGIN.x, height);
+  // Garis Vertikal (Sumbu Y) - Sepanjang layar melewati ORIGIN.x ke atas
+  ctx.moveTo(0, 0);
+  ctx.lineTo(0, (height / 2) * -1);
+  // Garis Vertikal (Sumbu Y) - Sepanjang layar melewati ORIGIN.x ke bawah
+  ctx.moveTo(0, 0);
+  ctx.lineTo(0, (height / 2));
 
   ctx.stroke();
 
@@ -261,25 +341,25 @@ const drawCartesianAxes = (ctx: CanvasRenderingContext2D, width: number, height:
   for (let x = ORIGIN.x; x < width; x += PIXELS_PER_METER) {
     const dist = x - ORIGIN.x; // Jarak pixel dari pusat
     const meter = dist / PIXELS_PER_METER;
-
-    drawTickX(ctx, x, meter);
+    drawTickX(ctx, dist, meter);
   }
   // --- C. LABEL & TICK MARK PADA SUMBU Y ---
   // Loop ke BAWAH dari origin (Nilai Positif di Canvas)
   for (let y = ORIGIN.y; y < height; y += PIXELS_PER_METER) {
     const dist = y - ORIGIN.y;
-    const meter = (dist / PIXELS_PER_METER) * -1 ;
-    drawTickY(ctx, y, meter);
+    const meter = (dist / PIXELS_PER_METER);
+    drawTickY(ctx, dist, meter, 1);
   }
   // Loop ke ATAS dari origin (Nilai Negatif)
   for (let y = ORIGIN.y; y > 0; y -= PIXELS_PER_METER) {
-    const dist = y - ORIGIN.y;
+    const dist = ORIGIN.y - y;
     const meter = (dist / PIXELS_PER_METER) * -1;
-    drawTickY(ctx, y, meter);
+    console.info(ORIGIN.y, y, dist, meter);
+    drawTickY(ctx, dist, meter, -1);
   }
 
   // Label Titik Nol
-  ctx.fillText("(0,0)", ORIGIN.x - 15, ORIGIN.y + 15);
+  ctx.fillText("(0,0)", 0, 0);
 };
 
 // Helper kecil untuk gambar strip di sumbu X
@@ -289,23 +369,23 @@ const drawTickX = (ctx: CanvasRenderingContext2D, x: number, val: number) => {
   const height = isMajor ? 10 : 4;
 
   ctx.beginPath();
-  ctx.moveTo(x, ORIGIN.y - height/2);
-  ctx.lineTo(x, ORIGIN.y + height/2);
+  ctx.moveTo(x, 0 - height / 2);
+  ctx.lineTo(x, height / 2);
   ctx.stroke();
 
-  if (isMajor) ctx.fillText(val.toString(), x, ORIGIN.y + 15);
+  if (isMajor) ctx.fillText(val.toString(), x, 15);
 };
 
 // Helper kecil untuk gambar strip di sumbu Y
-const drawTickY = (ctx: CanvasRenderingContext2D, y: number, val: number) => {
+const drawTickY = (ctx: CanvasRenderingContext2D, y: number, val: number, direction: number) => {
   if (val === 0) return;
   const isMajor = Math.abs(val) % 5 === 0;
   const width = isMajor ? 10 : 4;
 
   ctx.beginPath();
-  ctx.moveTo(ORIGIN.x - width/2, y);
-  ctx.lineTo(ORIGIN.x + width/2, y);
+  ctx.moveTo(0 - width / 2, 0 - y * direction);
+  ctx.lineTo(width / 2, 0 - y * direction);
   ctx.stroke();
 
-  if (isMajor) ctx.fillText(val.toString(), ORIGIN.x - 20, y);
+  if (isMajor) ctx.fillText(val.toString(), -20, 0 - y * direction);
 };

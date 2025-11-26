@@ -21,26 +21,57 @@
       width: 300px;
       cursor: pointer;
     }
+
+
   </style>
 </head>
 <body>
 
 <div class="controls" id="header">
-  <h1>test</h1>
+  <h1>control panel</h1>
+  <input type="radio" id="type-1" name="control-type" value="controls-1" checked>
+  <label for="type-1">Theta dan Kecepatan awal</label>
+  <input type="radio" id="type-2" name="control-type" value="controls-2">
+  <label for="type-1">Kecepatan sumbu X dan Y</label>
+  <br>
+  <div id="controls-1">
+    <label>Theta: <span id="thetaDisplay">0.0s</span></label><br>
+    <input type="range" id="theta" name="volume" min="1" max="90" value="30" step="1">
+    <br>
+    <label>Kecepatan awal: <span></span></label><br>
+    <input type="number" id="v-x-awal" value="10" max="100" step="1">
+    <br>
+  </div>
+  <div id="controls-2" style="display: none;">
+    <label for="v-x">Kecepatan sumbu X: </label><br>
+    <input type="number" id="v-x" name="vx" min="1" max="100" value="10" step="1">
+    <br>
+    <label for="v-y">Kecepatan sumbu Y: </label><br>
+    <input type="number" name="v-y" id="v-y" min="1" value="10" max="100" step="1">
+    <br>
+  </div>
   <label for="gravity">Gravitasi: <span></span></label><br>
   <input type="number" name="gravity" id="gravity" value="9.8" step="0.1">
-  <br>
-  <label>Theta: <span></span></label><br>
-  <input type="number" id="theta" value="30" max="90">
-  <br>
-  <label>Kecepatan awal: <span></span></label><br>
-  <input type="number" id="v-x-awal" value="10" max="100" step="1">
   <br>
   <label>Percepatan: <span></span></label><br>
   <input type="number" id="a" value="0" max="60" step="1">
   <br>
+  <input type="checkbox" id="air-resist" name="air-resist">
+  <label for="air-resist">Hambatan udara</label><br>
+  <input type="checkbox" id="axes" name="axes" checked>
+  <label for="axes">Sumbu</label><br>
+  <br>
+  <label>x</label><br>
+  <input type="range" id="x" name="x" min="0" max="104" value="0" step="1">
+  <br>
+  <label>y</label><br>
+  <input type="range" id="y" name="y" min="-34" max="34" value="0" step="1">
+  <br>
+  <label>angle</label><br>
+  <input type="range" id="angle" name="volume" min="0" max="360" value="0" step="1">
+  <br>
   <label>Timeline: <span id="timeDisplay">0.0s</span></label><br>
-  <input type="range" id="times" name="volume" min="0" max="100" value="0" step="1">
+  <input type="range" id="times" name="volume" min="0" max="1000" value="0" step="1">
   <button id="start">start</button>
 </div>
 
