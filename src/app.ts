@@ -15,10 +15,12 @@ type CheckPoint = {
 
 type Config = {
   isControl1: boolean
+  isUseAirResistance: boolean
 }
 
 let Config: Config = {
   isControl1: true,
+  isUseAirResistance: false
 }
 
 const createVector = (x: number, y: number): Vector2 => ({x, y})
@@ -46,14 +48,55 @@ const generatePath = (startX: number, startY: number, duration: number, g: numbe
   }
   const magnitude = Math.sqrt(vx * vx * vx + vy * vy);
 
+  let x = 0
+  let y = 0
+
   const timeStep = 0.01
   for (let t = 0; t <= duration; t += timeStep) {
 
-    // X = X0 + Vx * t + 0.5 + a + t^2
-    const x = startX + (vx * t) + (0.5 * acceleration * (t * t));
+    // gapake hambatan udara
+    if (! Config.isUseAirResistance) {
+      // X = X0 + Vx * t + 0.5 + a + t^2
+      const x = startX + (vx * t) + (0.5 * acceleration * (t * t));
 
-    // Y = Y0 + Vy * t + 0.5 * g * t^2
-    const y = startY + (vy * t) + (0.5 * gravity * (t * t));
+      // Y = Y0 + Vy * t + 0.5 * g * t^2
+      const y = startY + (vy * t) + (0.5 * gravity * (t * t));
+
+      if (y > 10) break
+
+      path.push({
+        time: t,
+        pos: createVector(x, y)
+      });
+      console.info('p')
+      continue;
+    }
+
+    console.info('t')
+
+    // katanya sih pake rumus pythagoras
+    const magnitude = Math.sqrt(vx * vx + vy * vy);
+
+
+    if (magnitude > 0) {
+      // F = k * v^2; [-vx & -vy]
+      const dragForce = dragCoefficient * magnitude * magnitude;
+
+      const dragForceX = dragForce * (vx / magnitude) * -1;
+      const dragForceY = dragForce * (vy / magnitude) * -1;
+
+      // a = F / m
+      const ax = dragForceX / mass;
+
+      const ay = (dragForceY / mass) + g;
+
+      // D. Update Kecepatan (GLBB sesaat)
+      vx += ax * timeStep;
+      vy += ay * timeStep;
+    }
+
+    x += vx * timeStep;
+    y += vy * timeStep;
 
     if (y > 10) break
 
@@ -214,6 +257,12 @@ const main = () => {
   const angle = document.getElementById('angle') as HTMLInputElement;
   const x = document.getElementById('x') as HTMLInputElement;
   const y = document.getElementById('y') as HTMLInputElement;
+  const mass = document.getElementById('mass') as HTMLInputElement;
+  const drag = document.getElementById('drag') as HTMLInputElement;
+  const airResist = document.getElementById('air-resist') as HTMLInputElement;
+  const airResistControl = document.getElementById('air-resist-control') as HTMLInputElement;
+  const noAirResist = document.getElementById('no-air-resist') as HTMLInputElement;
+  const start = document.getElementById('start') as HTMLButtonElement;
 
   if (!canvas || !ctx || !times || !gravity || !theta || !initialVel || !acceleration) return;
 
@@ -226,6 +275,17 @@ const main = () => {
 
     control2.style.display = 'block';
     control1.style.display = 'none';
+  }
+
+  const updateAirResist = (state: boolean) => {
+    if (state) {
+      airResistControl.style.display = 'block';
+      noAirResist.style.display = 'none';
+      return;
+    }
+
+    noAirResist.style.display = 'block';
+    airResistControl.style.display = 'none';
   }
 
   // - 120 karena dikurangi sama padding
@@ -242,11 +302,13 @@ const main = () => {
       const g = parseFloat(gravity.value) || 10.0
       const t = parseFloat(theta.value) || 30.0
       const v0 = parseFloat(initialVel.value) || 15.0
-      const a = parseFloat(acceleration.value)
+      const a = parseFloat(acceleration.value) || 0
       const vx = parseInt(initVX.value)
       const vy = parseInt(initVY.value)
+      const m = parseFloat(mass.value)
+      const dc = parseFloat(drag.value)
 
-      currentPath = generatePath(0, 0, 1000, g, t, v0, a, 14, 0.67, vx, vy);
+      currentPath = generatePath(0, 0, 1000, g, t, v0, a, m, dc, vx, vy);
 
       renderFrame()
     }
@@ -282,6 +344,8 @@ const main = () => {
     axes.addEventListener('input', renderWithNewPath);
     initVX.addEventListener('input', renderWithNewPath);
     initVY.addEventListener('input', renderWithNewPath);
+    mass.addEventListener('input', renderWithNewPath);
+    drag.addEventListener('input', renderWithNewPath);
     angle.addEventListener('input', renderFrame);
     x.addEventListener('input', renderFrame);
     y.addEventListener('input', renderFrame);
@@ -300,6 +364,69 @@ const main = () => {
         }
       })
     })
+
+    const updateAirResistAndRender = (state: boolean) => {
+      Config.isUseAirResistance = state
+      updateAirResist(state)
+      renderWithNewPath()
+    }
+
+    airResist.addEventListener('change', () => {
+      if (airResist.checked) updateAirResistAndRender(true)
+      else updateAirResistAndRender(false)
+    })
+
+    // 2. Variabel State
+    let isPlaying = false;
+    let playbackSpeed = 1.0; // 1.0 = Normal, 0.5 = Slow Mo, 2.0 = Fast
+    start.addEventListener('click', () => {
+      // Toggle status playing
+      isPlaying = !isPlaying;
+
+      if (isPlaying) {
+        start.innerText = "Pause";
+
+        // Reset jika sudah mentok di ujung
+        if (parseFloat(times.value) >= parseFloat(times.max)) {
+          times.value = "0";
+        }
+
+        // Mulai Loop
+        lastFrameTime = performance.now();
+        requestAnimationFrame(playLoop);
+      } else {
+        start.innerText = "Resume";
+      }
+    })
+
+    let lastFrameTime = 0;
+    const playLoop = (timestamp: number) => {
+      if (!isPlaying) return;
+      const deltaTime = (timestamp - lastFrameTime) / 1000;
+
+      console.info("playLoop", timestamp, lastFrameTime, timestamp - lastFrameTime, (timestamp - lastFrameTime) / 1000);
+      lastFrameTime = timestamp;
+
+      const sliderIncrement = deltaTime * playbackSpeed * 100;
+
+      let currentValue = parseFloat(times.value);
+      let newValue = currentValue + sliderIncrement;
+      const maxValue = parseFloat(times.max);
+
+      if (newValue >= maxValue) {
+        newValue = maxValue;
+        isPlaying = false;
+        start.innerText = "Replay";
+      }
+
+      times.value = newValue.toString();
+
+      times.dispatchEvent(new Event('input'));
+
+      if (isPlaying) {
+        requestAnimationFrame(playLoop);
+      }
+    };
 
     renderFrame();
   };
@@ -354,7 +481,6 @@ const drawCartesianAxes = (ctx: CanvasRenderingContext2D, width: number, height:
   for (let y = ORIGIN.y; y > 0; y -= PIXELS_PER_METER) {
     const dist = ORIGIN.y - y;
     const meter = (dist / PIXELS_PER_METER) * -1;
-    console.info(ORIGIN.y, y, dist, meter);
     drawTickY(ctx, dist, meter, -1);
   }
 
